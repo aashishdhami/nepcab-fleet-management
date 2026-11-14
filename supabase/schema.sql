@@ -1,0 +1,4 @@
+-- The current additive migration is migration_v3.sql.
+-- Do not run the older v2 schema file against a live project.
+-- Back up and inspect your existing database with inspect_live_schema.sql first.
+-- Then review and run migration_v3.sql.
