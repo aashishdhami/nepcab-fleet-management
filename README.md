@@ -1,53 +1,23 @@
-# NepCab Fleet Management v3
+# NepCab v3.3.9 — Configurable Commission Alignment
 
-React + Vite fleet and ride management application. Supports local demo mode and authenticated Supabase persistence.
+## Included
+- Reads the complete `commission_rates` history and selects the NepCab commission rate effective on the ride/booking BS date.
+- Keeps NepCab commission configurable globally in Settings. New rates are prospective; transaction snapshots preserve the rate and amount already applied.
+- Maps persisted multi-day booking commission snapshots back into the application so Driver Payroll and Owner Settlements can include them.
+- Percentage-based driver commission is calculated on the full booking gross amount.
+- `fixed_per_ride` driver commission is calculated per booking day (`fixed amount × number of days`).
+- Existing per-driver salary and commission agreements remain configurable independently.
+- No schema change is required.
 
-## Run locally
+## Important historical-data note
+The app now calculates fixed-per-ride booking commissions per day from the saved agreement snapshot. If you want the stored Supabase `driver_commission_amount` column to match for old multi-day fixed-per-ride bookings, run the optional `supabase/migrations/v3.3.9_commission_alignment.sql` once in the Supabase SQL Editor. It changes only rows with `driver_commission_type = 'fixed_per_ride'` and more than one day.
 
-1. Install Node.js 20+.
-2. Extract the ZIP and open this folder in VS Code.
-3. Open the VS Code terminal in the project folder.
-4. Run:
+## Verification checklist
+1. Open an existing percentage-based multi-day booking and verify the saved NepCab and driver commission amounts appear in Owner Settlements and Driver Payroll.
+2. For a 4-day booking with NPR 6,043 gross, 10% NepCab and 10% driver commission should each be NPR 604.30; owner net before expenses should be NPR 4,834.40.
+3. Create a new booking and confirm both commission amounts are stored in `vehicle_bookings`.
+4. Change the global NepCab rate in Settings; confirm only transactions dated on/after the new effective date use the new rate.
+5. Change an individual driver's salary or commission agreement; confirm other drivers are unaffected.
+6. Confirm old rides/bookings retain their saved commission snapshots after a rate change.
 
-```bash
-npm install
-npm run dev
-```
-
-5. Open the local URL printed by Vite (normally http://localhost:5173).
-
-## Connect Supabase
-
-1. Back up your Supabase project first.
-2. Open `supabase/migration_v3.sql` and review it against your current schema. It is additive and retains the existing `public.rides` table and legacy columns; it does not attempt to fuzzy-match historical text-only rides to owners, vehicles or drivers.
-3. Run the migration in Supabase SQL Editor.
-4. In the project root, copy `.env.example` to `.env.local`.
-5. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to your project URL and publishable/anon key.
-6. Create a staff user in Supabase Authentication (email/password).
-7. Restart Vite (`Ctrl+C`, then `npm run dev`) and sign in.
-
-Never put a Supabase `service_role` key in this frontend.
-
-## Important financial policy assumptions
-
-- Proposed NepCab commission: 10% of agreed fare on Online and Offline rides. This remains subject to owner confirmation. The rate can be changed prospectively in Settings; each new ride stores the applied rate and amount.
-- Driver commission is calculated from the effective driver compensation agreement and stored on the ride.
-- All expenses linked to a vehicle reduce that vehicle owner's calculated earnings. An expense linked to both vehicle and driver is counted once in owner expenses.
-- Passenger cash handling is outside the system. The system records calculated ride revenue and payable amounts; it does not claim to reconcile physical cash.
-- Driver and owner settlement entries are records of payments made outside the application. Partial settlements are supported.
-- Fare difference (App fare minus agreed fare) is not treated as debt or receivable.
-
-## Data safety notes
-
-- Owners, vehicles and drivers are deactivated rather than removed through their master screens.
-- Ride deletion is available as requested. A database audit trigger records inserts, updates and deletes in `audit_log`.
-- Historical rides from the old table are preserved. Old rides without `vehicle_id`/`driver_id` are not automatically linked; link them only after manual verification.
-- Local demo data is stored in browser localStorage. Supabase mode uses authenticated database reads/writes.
-
-## Build
-
-```bash
-npm run build
-```
-
-This release is a review build. Complete the supplied testing checklist and confirm commission policy with the owner before production use.
+Full Vite build must be run locally with `npm install` then `npm run build`.

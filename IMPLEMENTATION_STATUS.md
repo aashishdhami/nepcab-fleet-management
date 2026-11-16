@@ -1,50 +1,23 @@
-# v3 implementation status
+# v3.2.0 implementation status
 
-## Included in this review build
-- Owner, vehicle and driver master records with edit/deactivate/reactivate flows.
-- Searchable vehicle and driver selectors.
-- Daily odometer/battery entry and per-vehicle reading history; duplicate vehicle/date prevention; consecutive available-reading interval display.
-- Ride entry with generated unique ride ID, app/agreed fares, same-fare checkbox, searchable selectors, saved NepCab and driver commissions, CSV export, edit and delete.
-- Expense categories stored as records; vehicle/driver optional individually but at least one required; expense histories by vehicle/driver and period.
-- Driver payroll and owner settlements with period calculations, partial external payment records and histories.
-- Dashboard, central reports, prospective commission settings.
-- Supabase Auth and CRUD integration for the listed tables, plus local demo fallback.
-- Additive SQL migration and database audit trigger.
+## Prepared in this baseline
+- Fresh Supabase schema aligned to the current React application's table and column names.
+- Strict unique vehicle-to-driver assignment enforced by `vehicles.assigned_driver_id NOT NULL UNIQUE`.
+- Daily reading records store the assigned `driver_id`, not a user-selected morning driver.
+- Separate multi-day `vehicle_bookings` table with booking date, number of days, vehicle, driver, owner, passenger phone, total amount, status, and commission snapshots.
+- Unified expenses table with a check constraint requiring exactly one vehicle or driver association.
+- RLS policies for authenticated staff and audit logging.
+- Frontend mappings updated for the new `driver_id` daily-reading field and `expense_type` field.
+- Project version set to 3.2.0.
 
-## Must be tested against the actual Supabase project
-- Existing `public.rides` column constraints and historical rows; migration compatibility must be verified before execution.
-- Existing RLS policies and any existing policies with overlapping effects.
-- Mapping of legacy rides with no master-record foreign keys. No automatic fuzzy mapping is performed.
-- Effective-dated compensation history, salary proration, and any retroactive corrections.
-- Owner settlement snapshots and correction/reversal workflow after a payment is recorded.
-- Data import and reconciliation before switching from local demo storage.
+## Still required before release
+- Integrate and test a BS calendar component across every date field, date display, date/month filter, and report.
+- Review and correct all date-dependent logic so the BS display maps to the correct AD database date.
+- Verify all module queries and calculations against this clean schema.
+- Run `npm install` and `npm run build` in the user's environment; package registry access was unavailable in this workspace.
+- Test with a new Supabase project and sample records.
+- Verify payroll and owner settlement calculations, especially the commission treatment for multi-day bookings.
+- Perform a full owner acceptance test before production deployment.
 
-## Known limitations in this review build
-- Custom date-range filters are not yet implemented consistently; payroll and settlements currently use month selectors.
-- Editing/deleting expense, payment, and reading records is not yet exposed in every table.
-- Driver salary is treated as the monthly fixed amount for the selected month; mid-month proration/attendance rules are not defined.
-- Driver commission history is captured when new agreements are saved, but existing historical agreement data must be checked/imported before live payroll.
-- Owner settlement totals assume all ride agreed fares are attributable in the internal calculation model; actual cash movement is intentionally out of scope.
-- Existing rides that are not linked to a vehicle cannot appear in vehicle-owner settlements until manually linked.
-- The proposed 10% commission rule remains pending owner confirmation.
-
-Do not treat this build as production-ready until the Supabase migration, historical data, RLS, and financial test cases are verified.
-
-
-## Supabase compatibility patch v3.0.1
-- Corrected application table references to match the fresh schema (`driver_payments`, `owner_payments`, `commission_rates`).
-- Added field adapters for master records, agreements, readings, rides, expenses and settlement records.
-- Added ride display-name enrichment from vehicle/driver master records.
-- This is a compatibility patch, not a claim of complete end-to-end verification. Test each workflow before production use.
-
-
-## v3.0.3 driver compensation schema correction
-- Corrected agreement writes to use the live `monthly_salary` column, not `fixed_monthly_salary`.
-- Commission type values are serialized to the database constraint values `none`, `percentage`, and `fixed_per_ride`.
-- No database migration required. Live save still needs user verification.
-
-
-## v3.0.4 Rides agreement reference fix
-- Corrected fallback logic that could pass a driver UUID as `driver_agreement_id`.
-- Ride submission now requires a compensation agreement effective on the ride date and gives a clear validation message when none exists.
-- No database migration required.
+## Do not deploy yet
+This is a development baseline, not a production-ready release. Keep the existing deployed app and existing Supabase project untouched until the new version passes all checks.
